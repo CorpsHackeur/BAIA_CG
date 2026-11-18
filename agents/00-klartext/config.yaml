@@ -1,0 +1,15 @@
+# Einstellungen für den Agenten "Klartext"
+
+name: klartext
+
+# Welche KI arbeitet?  lokal = LM Studio auf diesem Rechner,  claude = Anthropic API (kommt später)
+anbieter: lokal
+
+# Name des Modells, so wie LM Studio es anzeigt
+modell: qwen/qwen3.6-27b
+
+# Soll das Modell erst "laut nachdenken"?  an = gründlicher, aber deutlich langsamer.  aus = schnell
+denken: aus
+
+# Wie kreativ? 0 = immer gleich, 1 = sehr frei. Für Leichte Sprache lieber niedrig.
+temperatur: 0.3

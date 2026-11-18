@@ -1,0 +1,9 @@
+# Adresse des gemeinsamen KI-Servers (LM Studio). Gilt für alle Agenten der Lobby-Maschine.
+#
+# Auf dem Leitungsrechner selbst:      http://localhost:1234
+# Auf den Laptops der Teilnehmenden:   die IP-Adresse des Leitungsrechners im Workshop-WLAN,
+#                                       zum Beispiel http://192.168.1.182:1234
+#
+# Ein einzelner Agent kann in seiner config.yaml mit "server:" eine andere Adresse setzen.
+
+server: http://localhost:1234
