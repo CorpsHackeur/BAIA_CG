@@ -16,16 +16,24 @@ from pathlib import Path
 
 import yaml
 
+from lobby_core.netz import finde_ki_server
+
 # Gemeinsame Server-Adresse für alle Agenten, steht in ki_server.yaml im Projektordner
 SERVER_DATEI = Path(__file__).resolve().parent.parent / "ki_server.yaml"
 
 
 def gemeinsamer_server() -> str:
-    """Liest die Adresse des KI-Servers aus ki_server.yaml."""
+    """Liest die Adresse des KI-Servers aus ki_server.yaml.
+
+    Steht dort "auto" (oder nichts), sucht der Agent LM Studio selbst im WLAN.
+    """
     try:
-        return yaml.safe_load(SERVER_DATEI.read_text(encoding="utf-8"))["server"]
+        adresse = yaml.safe_load(SERVER_DATEI.read_text(encoding="utf-8"))["server"]
     except (FileNotFoundError, KeyError, TypeError):
-        return "http://localhost:1234"
+        adresse = "auto"
+    if not adresse or str(adresse).strip().lower() == "auto":
+        return finde_ki_server() or "http://localhost:1234"
+    return str(adresse)
 
 
 @dataclass
@@ -71,8 +79,9 @@ def _frage_lmstudio(anweisung: str, text: str, einstellungen: dict) -> Antwort:
             daten = json.load(r)
     except urllib.error.URLError as fehler:
         raise SystemExit(
-            f"LM Studio ist nicht erreichbar ({fehler}).\n"
-            "Bitte in LM Studio den Server starten oder im Terminal eingeben: lms server start"
+            f"LM Studio ist unter {server} nicht erreichbar ({fehler}).\n"
+            "Bitte auf dem LM-Studio-Rechner den Server starten (lms server start) und dort\n"
+            "\"Serve on Local Network\" einschalten. Beide Rechner müssen im selben WLAN sein."
         )
 
     antwort_teile = [t["content"] for t in daten["output"] if t["type"] == "message"]
