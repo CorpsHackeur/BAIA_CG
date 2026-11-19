@@ -18,6 +18,7 @@ lobby_core/
 ki_server.yaml        Adresse des LM-Studio-Servers, gilt für alle Agenten
 postfach/             Hier landen die Ergebnisse (werden nicht hochgeladen)
 tests/klartext/       Beispieltext zum Thema Elektrifizierung
+pinnwand/             Webseite zum Teilen von Texten im Workshop-WLAN
 ```
 
 ## Einrichten
@@ -57,3 +58,21 @@ lms load qwen/qwen3.6-27b --context-length 32768 -y
 ```
 
 Die Adresse des Servers steht in `ki_server.yaml`. Auf anderen Laptops dort die IP-Adresse des LM-Studio-Rechners eintragen.
+
+## Pinnwand: Texte im WLAN teilen
+
+Die Pinnwand ist eine kleine Webseite, auf der alle im Workshop-WLAN Texte, Prompts und Ergebnisse teilen. Sie zeigt außerdem die Ergebnisse aus `postfach/` des Rechners an, auf dem sie läuft. Sie braucht nur Python, keine Zusatzpakete und kein Internet.
+
+In Claude Code auf dem Leitungsrechner:
+
+```text
+Starte die Pinnwand mit pinnwand/server.py und sag mir die Adresse für die Teilnehmenden.
+```
+
+Im Terminal:
+
+```bash
+python3 pinnwand/server.py
+```
+
+Beim Start zeigt die Pinnwand die Adresse für alle an, zum Beispiel `http://192.168.1.182:8080`. Diese Adresse öffnen die Teilnehmenden im Browser. Fragt die Firewall nach, den Zugriff im privaten Netz erlauben. Die Beiträge werden in `pinnwand/daten/` gespeichert und nicht hochgeladen.
