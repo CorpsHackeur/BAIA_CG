@@ -57,7 +57,15 @@ lms server start
 lms load qwen/qwen3.6-27b --context-length 32768 -y
 ```
 
-Die Adresse des Servers steht in `ki_server.yaml`. Auf anderen Laptops dort die IP-Adresse des LM-Studio-Rechners eintragen.
+In LM Studio zusätzlich **„Serve on Local Network“** einschalten, damit die Laptops im WLAN den Server erreichen.
+
+Eine IP-Adresse muss niemand eintragen: In `ki_server.yaml` steht `server: auto`. Jeder Agent sucht LM Studio selbst, erst auf dem eigenen Rechner, dann im WLAN, und merkt sich die Adresse in `.netz.json`. Das klappt in jedem WLAN ohne Änderung. Nur wenn die Suche scheitert (etwa in Gäste-WLANs, die Geräte voneinander abschotten), dort eine feste Adresse eintragen.
+
+Zum Prüfen, was ein Laptop findet:
+
+```bash
+python3 -m lobby_core.netz
+```
 
 ## Pinnwand: Texte im WLAN teilen
 
@@ -75,4 +83,12 @@ Im Terminal:
 python3 pinnwand/server.py
 ```
 
-Beim Start zeigt die Pinnwand die Adresse für alle an, zum Beispiel `http://192.168.1.182:8080`. Diese Adresse öffnen die Teilnehmenden im Browser. Fragt die Firewall nach, den Zugriff im privaten Netz erlauben. Die Beiträge werden in `pinnwand/daten/` gespeichert und nicht hochgeladen.
+Beim Start zeigt die Pinnwand die Adresse für alle an, zum Beispiel `http://192.168.1.182:8080`. Diese Adresse öffnen die Teilnehmenden im Browser. Fragt die Firewall nach, den Zugriff im privaten Netz erlauben. Ist Port 8080 belegt, nimmt die Pinnwand 8081 oder 8082. Die Beiträge werden in `pinnwand/daten/` gespeichert und nicht hochgeladen.
+
+**Gemeinsames Postfach:** Läuft die Pinnwand, finden die Agenten sie von selbst (per Rundruf im WLAN, sonst per Suche). Dann gilt:
+
+- Jedes Ergebnis geht zusätzlich an die Pinnwand und landet im `postfach/` des Pinnwand-Rechners.
+- Braucht ein Agent Input, holt er neuere Ergebnisse der anderen Laptops von dort.
+- Läuft LM Studio auf demselben Rechner, erfahren die Agenten über die Pinnwand auch dessen Adresse.
+
+So läuft die Kette über alle Laptops hinweg. Ohne Pinnwand arbeitet jeder Laptop wie bisher mit seinem eigenen Postfach.
