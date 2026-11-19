@@ -6,4 +6,4 @@
 #
 # Ein einzelner Agent kann in seiner config.yaml mit "server:" eine andere Adresse setzen.
 
-server: http://localhost:1234
+server: http://192.168.136.227:1234

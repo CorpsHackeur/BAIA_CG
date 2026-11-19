@@ -7,6 +7,7 @@ benannt nach Agent und Uhrzeit, zum Beispiel:
 
 from __future__ import annotations  # damit es auch mit älterem Python (ab 3.9) läuft
 
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -16,13 +17,21 @@ POSTFACH = Path(__file__).resolve().parent.parent / "postfach"
 def ablegen(agent: str, inhalt: str) -> Path:
     """Speichert ein Ergebnis im Postfach und gibt den Dateipfad zurück."""
     POSTFACH.mkdir(exist_ok=True)
-    zeit = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    datei = POSTFACH / f"{agent}_{zeit}.md"
+    datei = POSTFACH / f"{agent}_{datetime.now():%Y-%m-%d_%H-%M-%S}.md"
+    while datei.exists():  # nie ein älteres Ergebnis überschreiben: auf die nächste Sekunde warten
+        time.sleep(0.2)
+        datei = POSTFACH / f"{agent}_{datetime.now():%Y-%m-%d_%H-%M-%S}.md"
     datei.write_text(inhalt, encoding="utf-8")
     return datei
 
 
+def neueste_datei(agent: str) -> Path | None:
+    """Gibt den Pfad zum jüngsten Ergebnis eines Agenten zurück, oder None."""
+    dateien = sorted(POSTFACH.glob(f"{agent}_*.md"))
+    return dateien[-1] if dateien else None
+
+
 def neuestes(agent: str) -> str | None:
     """Holt das jüngste Ergebnis eines Agenten, oder None, wenn es keins gibt."""
-    dateien = sorted(POSTFACH.glob(f"{agent}_*.md"))
-    return dateien[-1].read_text(encoding="utf-8") if dateien else None
+    datei = neueste_datei(agent)
+    return datei.read_text(encoding="utf-8") if datei else None
