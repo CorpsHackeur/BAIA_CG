@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pinnwand Lobby-Maschine</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --karte: #ffffff; --text: #1d1d1b; --leise: #6b6b66;
+    --rand: #dcdad4; --akzent: #1f6f5c; --akzent-text: #ffffff; --gefahr: #a33a2a;
+    --eingabe: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161716; --karte: #212321; --text: #ececea; --leise: #a3a39e;
+      --rand: #3a3c39; --akzent: #4fb196; --akzent-text: #0e1a16; --gefahr: #e0806f;
+      --eingabe: #1a1c1a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .rahmen { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .unterzeile { color: var(--leise); margin: 0 0 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--rand); background: var(--karte); color: var(--text);
+    padding: 8px 14px; border-radius: 999px; cursor: pointer; font: inherit;
+  }
+  .tab[aria-selected="true"] { background: var(--akzent); color: var(--akzent-text); border-color: var(--akzent); }
+  .karte {
+    background: var(--karte); border: 1px solid var(--rand); border-radius: 10px;
+    padding: 16px; margin-bottom: 14px;
+  }
+  label { display: block; font-size: .9rem; color: var(--leise); margin: 0 0 4px; }
+  input, textarea {
+    width: 100%; font: inherit; color: var(--text); background: var(--eingabe);
+    border: 1px solid var(--rand); border-radius: 6px; padding: 8px 10px;
+  }
+  textarea { min-height: 160px; resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .92rem; }
+  .zeile { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 600px) { .zeile { grid-template-columns: 1fr; } }
+  button.haupt, button.klein {
+    font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--akzent);
+  }
+  button.haupt { background: var(--akzent); color: var(--akzent-text); padding: 8px 18px; margin-top: 10px; }
+  button.klein { background: transparent; color: var(--akzent); padding: 3px 10px; font-size: .85rem; }
+  button.klein.loeschen { color: var(--gefahr); border-color: var(--gefahr); }
+  .suche { margin-bottom: 14px; }
+  .kopf { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+  .kopf h2 { font-size: 1.1rem; margin: 0; overflow-wrap: anywhere; }
+  .meta { color: var(--leise); font-size: .85rem; }
+  .aktionen { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  pre.inhalt {
+    white-space: pre-wrap; overflow-wrap: anywhere; margin: 10px 0 0;
+    font: .92rem/1.5 ui-monospace, Menlo, Consolas, monospace;
+    max-height: 340px; overflow: auto; border-top: 1px solid var(--rand); padding-top: 10px;
+  }
+  pre.inhalt.offen { max-height: none; }
+  .leer { color: var(--leise); text-align: center; padding: 30px 0; }
+  .meldung { min-height: 1.5em; font-size: .9rem; color: var(--leise); margin-top: 6px; }
+  .meldung.fehler { color: var(--gefahr); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="rahmen">
+  <h1>Pinnwand Lobby-Maschine</h1>
+  <p class="unterzeile">Texte im Workshop-WLAN teilen. Die Seite aktualisiert sich alle paar Sekunden von selbst.</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-beitraege" aria-selected="true">Beiträge</button>
+    <button class="tab" role="tab" id="tab-postfach" aria-selected="false">Postfach der Agenten</button>
+  </div>
+
+  <section id="bereich-beitraege">
+    <form class="karte" id="formular">
+      <div class="zeile">
+        <div>
+          <label for="autor">Dein Name</label>
+          <input id="autor" maxlength="200" autocomplete="name" placeholder="z. B. Anna, Agent 02">
+        </div>
+        <div>
+          <label for="titel">Titel</label>
+          <input id="titel" maxlength="200" placeholder="Worum geht es?">
+        </div>
+      </div>
+      <label for="text">Text</label>
+      <textarea id="text" placeholder="Text, Prompt oder Ergebnis hier einfügen …" required></textarea>
+      <button class="haupt" type="submit">Teilen</button>
+      <div class="meldung" id="meldung"></div>
+    </form>
+
+    <input class="suche" id="suche-beitraege" type="search" placeholder="Beiträge durchsuchen …">
+    <div id="liste-beitraege"></div>
+  </section>
+
+  <section id="bereich-postfach" hidden>
+    <p class="meta">Ergebnisse der Agenten aus dem Ordner <code>postfach/</code> auf dem Rechner, auf dem die Pinnwand läuft. Nur lesen.</p>
+    <input class="suche" id="suche-postfach" type="search" placeholder="Postfach durchsuchen …">
+    <div id="liste-postfach"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var daten = { beitraege: [], postfach: [] };
+  var stand = { beitraege: "", postfach: "" };
+  var offen = {};
+
+  function $(id) { return document.getElementById(id); }
+
+  function speicherLesen(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+  function speicherSchreiben(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function zeitText(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function el(tag, klasse, text) {
+    var e = document.createElement(tag);
+    if (klasse) e.className = klasse;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function knopf(text, klasse, aktion) {
+    var b = el("button", "klein" + (klasse ? " " + klasse : ""), text);
+    b.type = "button";
+    b.addEventListener("click", aktion);
+    return b;
+  }
+
+  function kopieren(text, b) {
+    function ok() { var alt = b.textContent; b.textContent = "Kopiert"; setTimeout(function () { b.textContent = alt; }, 1500); }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(ok, function () { altKopieren(text) && ok(); });
+    } else if (altKopieren(text)) { ok(); }
+  }
+  function altKopieren(text) {
+    // Fallback für http:// im lokalen Netz (dort fehlt navigator.clipboard)
+    var t = document.createElement("textarea");
+    t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(t);
+    return ok;
+  }
+
+  function herunterladen(name, text) {
+    var blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function dateiname(b) {
+    var basis = (b.titel || b.autor || "beitrag").toLowerCase()
+      .replace(/[äöüß]/g, function (c) { return { "ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss" }[c]; })
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
+    return (basis || "beitrag") + ".md";
+  }
+
+  function passt(suche, felder) {
+    if (!suche) return true;
+    var s = suche.toLowerCase();
+    return felder.some(function (f) { return (f || "").toLowerCase().indexOf(s) !== -1; });
+  }
+
+  function karte(schluessel, titel, meta, text, aktionen) {
+    var k = el("article", "karte");
+    var kopf = el("div", "kopf");
+    kopf.appendChild(el("h2", null, titel));
+    kopf.appendChild(el("span", "meta", meta));
+    k.appendChild(kopf);
+    var pre = el("pre", "inhalt" + (offen[schluessel] ? " offen" : ""), text);
+    k.appendChild(pre);
+    var leiste = el("div", "aktionen");
+    leiste.appendChild(knopf(offen[schluessel] ? "Einklappen" : "Ganz anzeigen", "", function (ev) {
+      offen[schluessel] = !offen[schluessel];
+      pre.classList.toggle("offen", !!offen[schluessel]);
+      ev.target.textContent = offen[schluessel] ? "Einklappen" : "Ganz anzeigen";
+    }));
+    aktionen.forEach(function (a) { leiste.appendChild(a); });
+    k.appendChild(leiste);
+    return k;
+  }
+
+  function zeigeBeitraege() {
+    var ziel = $("liste-beitraege");
+    var suche = $("suche-beitraege").value.trim();
+    ziel.textContent = "";
+    var treffer = daten.beitraege.filter(function (b) { return passt(suche, [b.titel, b.autor, b.text]); });
+    if (!treffer.length) {
+      ziel.appendChild(el("p", "leer", daten.beitraege.length ? "Keine Treffer." : "Noch keine Beiträge. Teile den ersten Text!"));
+      return;
+    }
+    treffer.forEach(function (b) {
+      var kopierKnopf = knopf("Kopieren", "", function () { kopieren(b.text, kopierKnopf); });
+      ziel.appendChild(karte("b:" + b.id, b.titel || "Ohne Titel", b.autor + " · " + zeitText(b.zeit), b.text, [
+        kopierKnopf,
+        knopf("Als .md speichern", "", function () { herunterladen(dateiname(b), b.text); }),
+        knopf("Löschen", "loeschen", function () { loeschen(b); })
+      ]));
+    });
+  }
+
+  function zeigePostfach() {
+    var ziel = $("liste-postfach");
+    var suche = $("suche-postfach").value.trim();
+    ziel.textContent = "";
+    var treffer = daten.postfach.filter(function (p) { return passt(suche, [p.name, p.text]); });
+    if (!treffer.length) {
+      ziel.appendChild(el("p", "leer", daten.postfach.length ? "Keine Treffer." : "Das Postfach ist leer."));
+      return;
+    }
+    treffer.forEach(function (p) {
+      var kopierKnopf = knopf("Kopieren", "", function () { kopieren(p.text, kopierKnopf); });
+      ziel.appendChild(karte("p:" + p.name, p.name, "Agent " + p.agent + " · " + zeitText(p.zeit), p.text, [
+        kopierKnopf,
+        knopf("Herunterladen", "", function () { herunterladen(p.name, p.text); })
+      ]));
+    });
+  }
+
+  function laden(art, zeigen) {
+    return fetch("/api/" + art, { cache: "no-store" })
+      .then(function (r) { return r.text(); })
+      .then(function (roh) {
+        if (roh === stand[art]) return; // unverändert: nicht neu zeichnen
+        stand[art] = roh;
+        daten[art] = JSON.parse(roh);
+        zeigen();
+      })
+      .catch(function () {});
+  }
+
+  function aktualisieren() {
+    laden("beitraege", zeigeBeitraege);
+    laden("postfach", zeigePostfach);
+  }
+
+  function meldung(text, fehler) {
+    var m = $("meldung");
+    m.textContent = text;
+    m.className = "meldung" + (fehler ? " fehler" : "");
+  }
+
+  function loeschen(b) {
+    if (!confirm("Beitrag „" + (b.titel || "Ohne Titel") + "“ von " + b.autor + " wirklich löschen?")) return;
+    fetch("/api/beitraege/" + encodeURIComponent(b.id), { method: "DELETE" })
+      .then(function () { stand.beitraege = ""; aktualisieren(); });
+  }
+
+  $("autor").value = speicherLesen("pinnwand-autor");
+
+  $("formular").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var autor = $("autor").value.trim();
+    var text = $("text").value;
+    if (!text.trim()) { meldung("Bitte einen Text eingeben.", true); return; }
+    speicherSchreiben("pinnwand-autor", autor);
+    fetch("/api/beitraege", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ autor: autor, titel: $("titel").value, text: text })
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error(j.fehler || "Fehler beim Teilen");
+      });
+    }).then(function () {
+      $("titel").value = ""; $("text").value = "";
+      meldung("Geteilt.");
+      setTimeout(function () { meldung(""); }, 2500);
+      stand.beitraege = ""; aktualisieren();
+    }).catch(function (e) { meldung(e.message || "Server nicht erreichbar.", true); });
+  });
+
+  $("suche-beitraege").addEventListener("input", zeigeBeitraege);
+  $("suche-postfach").addEventListener("input", zeigePostfach);
+
+  function tabWechseln(name) {
+    ["beitraege", "postfach"].forEach(function (n) {
+      $("tab-" + n).setAttribute("aria-selected", String(n === name));
+      $("bereich-" + n).hidden = n !== name;
+    });
+    speicherSchreiben("pinnwand-tab", name);
+  }
+  $("tab-beitraege").addEventListener("click", function () { tabWechseln("beitraege"); });
+  $("tab-postfach").addEventListener("click", function () { tabWechseln("postfach"); });
+  if (speicherLesen("pinnwand-tab") === "postfach") tabWechseln("postfach");
+
+  aktualisieren();
+  setInterval(aktualisieren, 4000);
+})();
+</script>
+</body>
+</html>
