@@ -6,4 +6,5 @@
 #
 # Ein einzelner Agent kann in seiner config.yaml mit "server:" eine andere Adresse setzen.
 
-server: http://192.168.136.227:1234
+server: http://192.168.138.119:1234
+postfach: http://192.168.133.61:8080
